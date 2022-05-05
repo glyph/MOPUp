@@ -995,6 +995,14 @@ doc = ["sphinx-rtd-theme", "sphinx-autodoc-typehints (>=1.2.0)"]
 test = ["pytest", "typing-extensions", "mypy"]
 
 [[package]]
+name = "types-html5lib"
+version = "1.1.7"
+description = "Typing stubs for html5lib"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "types-requests"
 version = "2.27.25"
 description = "Typing stubs for requests"
@@ -1096,7 +1104,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<4.0"
-content-hash = "494b39189f83982d80c39e61c46ca62d4843e8e16124ac25724061e95451d43d"
+content-hash = "5f5770012b1d27ab3138c7368ce36666d263e910a691777b6d44d0b19435f728"
 
 [metadata.files]
 alabaster = [
@@ -1674,6 +1682,10 @@ typed-ast = [
 typeguard = [
     {file = "typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1"},
     {file = "typeguard-2.13.3.tar.gz", hash = "sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4"},
+]
+types-html5lib = [
+    {file = "types-html5lib-1.1.7.tar.gz", hash = "sha256:fdb307102ceea52adf52aea0e10255d142ee29d7f169014144a730707a92066a"},
+    {file = "types_html5lib-1.1.7-py3-none-any.whl", hash = "sha256:4bc5a1de03b9a697b7cc04b0d03eeed5d36c0073165dd9dc54f2f43d0f23b31f"},
 ]
 types-requests = [
     {file = "types-requests-2.27.25.tar.gz", hash = "sha256:805ae7e38fd9d157153066dc4381cf585fd34dfa212f2fc1fece248c05aac571"},

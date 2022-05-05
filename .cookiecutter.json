@@ -1,0 +1,12 @@
+{
+  "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
+  "author": "Glyph Lefkowitz",
+  "development_status": "Development Status :: 3 - Alpha",
+  "email": "glyph@glyph.im",
+  "friendly_name": "MOPUp",
+  "github_user": "glyph",
+  "license": "MIT",
+  "package_name": "mopup",
+  "project_name": "MOPUp",
+  "version": "2022.5.5"
+}

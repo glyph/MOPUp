@@ -55,7 +55,7 @@ You can install *MOPUp* via pip_ from PyPI_:
 
 .. code:: console
 
-   $ pip install MOPUp
+   $ pip install mopup
 
 
 Usage

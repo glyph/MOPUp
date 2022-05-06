@@ -1,5 +1,6 @@
 """Command-line interface."""
 import click
+
 from mopup import main as libmain
 
 

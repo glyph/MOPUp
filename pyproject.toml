@@ -53,7 +53,7 @@ types-requests = "*"
 types-html5lib = "*"
 
 [tool.poetry.scripts]
-MOPUp = "mopup.__main__:main"
+mopup = "mopup.__main__:main"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]

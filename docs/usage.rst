@@ -2,5 +2,5 @@ Usage
 =====
 
 .. click:: mopup.__main__:main
-   :prog: MOPUp
+   :prog: mopup
    :nested: full

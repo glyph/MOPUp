@@ -1,3 +1,6 @@
+"""
+Auto-updater for official python.org builds of python.
+"""
 import collections
 from platform import mac_ver
 from re import compile as compile_re
@@ -16,6 +19,9 @@ from hyperlink import DecodedURL
 def alllinksin(
     u: DecodedURL, e: Pattern[str]
 ) -> Iterable[Tuple[Match[str], DecodedURL]]:
+    """
+    Get all the links in the given URL whose text matches the given pattern.
+    """
     for a in html5lib.parse(
         requests.get(u.to_text()).text, namespaceHTMLElements=False
     ).findall(".//a"):
@@ -25,6 +31,9 @@ def alllinksin(
 
 
 def main() -> None:
+    """
+    Do an update.
+    """
     this_mac_ver = tuple(map(int, mac_ver()[0].split(".")[:2]))
     ver = compile_re(r"(\d+)\.(\d+).(\d+)/")
     macpkg = compile_re("python-(.+)-macosx?(.*).pkg")

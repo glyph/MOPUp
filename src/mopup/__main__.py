@@ -12,4 +12,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main(prog_name="MOPUp")  # pragma: no cover
+    main(prog_name="mopup")  # pragma: no cover

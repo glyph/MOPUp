@@ -1,9 +1,14 @@
+"""
+Auto-updater for official python.org builds of python.
+"""
 import collections
 from platform import mac_ver
 from re import compile as compile_re
 from sys import version_info
-from typing import Iterable, Dict
-from typing import Pattern, Match
+from typing import Dict
+from typing import Iterable
+from typing import Match
+from typing import Pattern
 from typing import Tuple
 
 import html5lib
@@ -11,7 +16,12 @@ import requests
 from hyperlink import DecodedURL
 
 
-def alllinksin(u: DecodedURL, e: Pattern[str]) -> Iterable[Tuple[Match[str], DecodedURL]]:
+def alllinksin(
+    u: DecodedURL, e: Pattern[str]
+) -> Iterable[Tuple[Match[str], DecodedURL]]:
+    """
+    Get all the links in the given URL whose text matches the given pattern.
+    """
     for a in html5lib.parse(
         requests.get(u.to_text()).text, namespaceHTMLElements=False
     ).findall(".//a"):
@@ -21,6 +31,9 @@ def alllinksin(u: DecodedURL, e: Pattern[str]) -> Iterable[Tuple[Match[str], Dec
 
 
 def main() -> None:
+    """
+    Do an update.
+    """
     this_mac_ver = tuple(map(int, mac_ver()[0].split(".")[:2]))
     ver = compile_re(r"(\d+)\.(\d+).(\d+)/")
     macpkg = compile_re("python-(.+)-macosx?(.*).pkg")
@@ -28,13 +41,13 @@ def main() -> None:
     thismajor, thisminor, thismicro, *other = version_info
 
     # major, minor, micro, macos
-    versions: Dict[int, Dict[int, Dict[int, Dict[str, DecodedURL]]]] = collections.defaultdict(
+    versions: Dict[
+        int, Dict[int, Dict[int, Dict[str, DecodedURL]]]
+    ] = collections.defaultdict(
         lambda: collections.defaultdict(lambda: collections.defaultdict(dict))
     )
 
     baseurl = DecodedURL.from_text("https://www.python.org/ftp/python/")
-
-
 
     for eachver, suburl in alllinksin(baseurl, ver):
         major, minor, micro = map(int, eachver.groups())

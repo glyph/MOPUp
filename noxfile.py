@@ -120,7 +120,13 @@ def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
     session.install(".")
-    session.install("mypy", "pytest")
+    session.install(
+        "mypy",
+        "pytest",
+        # These two should be pulled from dev dependencies somehow...
+        "types-requests",
+        "types-html5lib",
+    )
     session.run("mypy", *args)
     if not session.posargs:
         session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")

@@ -1,23 +1,26 @@
 """Auto-updater for official python.org builds of python."""
 import collections
-
-from subprocess import run
-from rich.progress import Progress
-from os import unlink, rename, makedirs, rmdir
-from os.path import expanduser, join as pathjoin
-from uuid import uuid4
+from os import makedirs
+from os import rename
+from os import rmdir
+from os import unlink
+from os.path import expanduser
+from os.path import join as pathjoin
 from platform import mac_ver
 from re import compile as compile_re
+from subprocess import run
 from sys import version_info
 from typing import Dict
 from typing import Iterable
 from typing import Match
 from typing import Pattern
 from typing import Tuple
+from uuid import uuid4
 
 import html5lib
 import requests
 from hyperlink import DecodedURL
+from rich.progress import Progress
 
 
 def alllinksin(

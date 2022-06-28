@@ -39,14 +39,16 @@ MOPUp
 Features
 --------
 
-* TODO
+MOPUp is the mac**O**S **P**ython.org **Updater**.
 
+If you prefer to use the binary installers from python.org, it's easy to forget
+to update them.  This is a program that does that; it updates them.  Just ``pip
+install mopup`` into a virtualenv using the Python you are using, run ``mopup``
+and provide your password when required.
 
-Requirements
-------------
-
-* TODO
-
+Normally, it does this using a CLI in the background, but if you'd prefer, you
+can run it with ``--interactive`` for it to launch the usual macOS GUI
+Installer app.
 
 Installation
 ------------

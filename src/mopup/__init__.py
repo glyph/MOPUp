@@ -8,7 +8,7 @@ from os.path import expanduser
 from os.path import join as pathjoin
 from platform import mac_ver
 from re import compile as compile_re
-from subprocess import run
+from subprocess import run  # noqa: S404
 from sys import version_info
 from typing import Dict
 from typing import Iterable
@@ -83,6 +83,29 @@ def main(interactive: bool, force: bool) -> None:
     if not (update_needed or force):
         return
 
+    finalname = do_download(download_url)
+    if interactive:
+        argv = ["/usr/bin/open", "-b", "com.apple.installer", finalname]
+    else:
+        print("Enter your administrative password to run the update:")
+        argv = [
+            "/usr/bin/sudo",
+            "/usr/sbin/installer",
+            "-pkg",
+            finalname,
+            "-target",
+            "/",
+        ]
+    run(argv)  # noqa: S603
+    print("Complete.")
+
+
+def do_download(download_url: DecodedURL) -> str:
+    """
+    Download the given URL into the downloads directory.
+
+    Returning the path when successful.
+    """
     basename = download_url.path[-1]
     partial = basename + ".mopup-partial"
     downloads_dir = expanduser("~/Downloads/")
@@ -105,16 +128,10 @@ def main(interactive: bool, force: bool) -> None:
                         f.write(chunk)
             print(".")
             rename(contentname, finalname)
-        except:
+        except BaseException:
             unlink(contentname)
             rmdir(partialdir)
             raise
         else:
             rmdir(partialdir)
-
-    if interactive:
-        print("Enter your administrative password to run the update:")
-        run(["open", "-b", "com.apple.installer", finalname])
-    else:
-        run(["sudo", "installer", "-pkg", finalname, "-target", "/"])
-    print("Complete.")
+            return finalname

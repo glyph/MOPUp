@@ -39,7 +39,7 @@ MOPUp
 Features
 --------
 
-MOPUp is the mac**O**S **P**ython.org **Updater**.
+MOPUp is the mac\ *O*\ S *P*\ ython.org *Updater*.
 
 If you prefer to use the binary installers from python.org, it's easy to forget
 to update them.  This is a program that does that; it updates them.  Just ``pip

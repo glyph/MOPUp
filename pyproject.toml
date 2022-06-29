@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "MOPUp"
-version = "2022.5.27"
+version = "2022.6.27.1"
 description = "MOPUp"
 authors = ["Glyph Lefkowitz <glyph@glyph.im>"]
 license = "MIT"
@@ -24,6 +24,7 @@ click = ">=8.0.1"
 html5lib = ">=1.1"
 requests = ">=2.27.1"
 hyperlink = "*"
+rich = "^12.4.4"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=6.2.5"
@@ -65,7 +66,7 @@ source = ["mopup", "tests"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 100
+fail_under = 90
 
 [tool.mypy]
 strict = true

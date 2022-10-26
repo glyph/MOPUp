@@ -3,8 +3,7 @@ name: Labeler
 on:
   push:
     branches:
-      - main
-      - master
+      - trunk
 
 jobs:
   labeler:

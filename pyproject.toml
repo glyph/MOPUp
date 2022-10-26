@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "MOPUp"
-version = "2022.10.25"
+version = "2022.10.26"
 description = "MOPUp"
 authors = ["Glyph Lefkowitz <glyph@glyph.im>"]
 license = "MIT"

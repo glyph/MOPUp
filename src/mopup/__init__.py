@@ -35,7 +35,7 @@ def alllinksin(
             yield match, u.click(a.attrib["href"])
 
 
-def main(interactive: bool, force: bool) -> None:
+def main(interactive: bool, force: bool, minor_upgrade: bool, dry_run: bool) -> None:
     """Do an update."""
     this_mac_ver = tuple(map(int, mac_ver()[0].split(".")[:2]))
     ver = compile_re(r"(\d+)\.(\d+).(\d+)/")
@@ -56,23 +56,24 @@ def main(interactive: bool, force: bool) -> None:
         major, minor, micro = map(int, eachver.groups())
         if major != thismajor:
             continue
-        if minor != thisminor:
+        if minor != thisminor and not minor_upgrade:
             continue
         for eachmac, pkgdl in alllinksin(suburl, macpkg):
             pyver, macver = eachmac.groups()
             if pyver == f"{major}.{minor}.{micro}":
                 versions[major][minor][micro][macver] = pkgdl
 
-    newmicro = max(versions[thismajor][thisminor].keys())
-    available_mac_vers = versions[thismajor][thisminor][newmicro].keys()
+    newminor = max(versions[thismajor].keys())
+    newmicro = max(versions[thismajor][newminor].keys())
+    available_mac_vers = versions[thismajor][newminor][newmicro].keys()
     best_available_mac = max(
         available_mac_ver
         for available_mac_ver in available_mac_vers
         if this_mac_ver >= tuple(int(x) for x in available_mac_ver.split("."))
     )
 
-    update_needed = newmicro > thismicro
-    download_url = versions[thismajor][thisminor][newmicro][best_available_mac]
+    update_needed = (newminor, newmicro) > (thisminor, thismicro)
+    download_url = versions[thismajor][newminor][newmicro][best_available_mac]
     print(
         "update",
         "needed" if update_needed else "not needed",
@@ -80,7 +81,7 @@ def main(interactive: bool, force: bool) -> None:
         download_url,
     )
 
-    if not (update_needed or force):
+    if dry_run or not (update_needed or force):
         return
 
     finalname = do_download(download_url)

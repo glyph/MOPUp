@@ -17,9 +17,19 @@ from mopup import main as libmain
 @click.option(
     "--force", default=False, help="reinstall python even if it's up to date", type=bool
 )
-def main(interactive: bool, force: bool) -> None:
+@click.option(
+    "--minor",
+    default=False,
+    help="do a minor version upgrade rather than the default (a micro-version)",
+)
+@click.option(
+    "--dry-run",
+    default=False,
+    help="don't actually download or install anything even if we're not up to date"
+)
+def main(interactive: bool, force: bool, minor: bool, dry_run: bool) -> None:
     """MOPUp."""
-    libmain(interactive=interactive, force=force)
+    libmain(interactive=interactive, force=force, minor_upgrade=minor, dry_run=dry_run)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ from mopup import main as libmain
 @click.option(
     "--dry-run",
     default=False,
-    help="don't actually download or install anything even if we're not up to date"
+    help="don't actually download or install anything even if we're not up to date",
 )
 def main(interactive: bool, force: bool, minor: bool, dry_run: bool) -> None:
     """MOPUp."""

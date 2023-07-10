@@ -24,7 +24,7 @@ click = ">=8.0.1"
 html5lib = ">=1.1"
 requests = ">=2.27.1"
 hyperlink = "*"
-rich = "^12.4.4"
+rich = ">=12.4.4,<14.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=6.2.5"

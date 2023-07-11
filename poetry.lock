@@ -1581,13 +1581,13 @@ test = ["mypy", "pytest", "typing-extensions"]
 
 [[package]]
 name = "types-html5lib"
-version = "1.1.7"
+version = "1.1.11.14"
 description = "Typing stubs for html5lib"
 optional = false
 python-versions = "*"
 files = [
-    {file = "types-html5lib-1.1.7.tar.gz", hash = "sha256:fdb307102ceea52adf52aea0e10255d142ee29d7f169014144a730707a92066a"},
-    {file = "types_html5lib-1.1.7-py3-none-any.whl", hash = "sha256:4bc5a1de03b9a697b7cc04b0d03eeed5d36c0073165dd9dc54f2f43d0f23b31f"},
+    {file = "types-html5lib-1.1.11.14.tar.gz", hash = "sha256:091e9e74e0ee37c93fd789a164e99b2af80ecf5a314280450c6a763d027ea209"},
+    {file = "types_html5lib-1.1.11.14-py3-none-any.whl", hash = "sha256:758c1a27f3b63363a346f3646be9f8b1f25df4fc1f96f88af6d1d831f24ad675"},
 ]
 
 [[package]]

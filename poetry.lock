@@ -1658,6 +1658,17 @@ doc = ["sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
 test = ["mypy", "pytest", "typing-extensions"]
 
 [[package]]
+name = "types-click"
+version = "7.1.8"
+description = "Typing stubs for click"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-click-7.1.8.tar.gz", hash = "sha256:b6604968be6401dc516311ca50708a0a28baa7a0cb840efd7412f0dbbff4e092"},
+    {file = "types_click-7.1.8-py3-none-any.whl", hash = "sha256:8cb030a669e2e927461be9827375f83c16b8178c365852c060a34e24871e7e81"},
+]
+
+[[package]]
 name = "types-html5lib"
 version = "1.1.11.14"
 description = "Typing stubs for html5lib"
@@ -1800,4 +1811,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<4.0"
-content-hash = "e31fb3274da8e9147cdddbaa6bf820cf493f4d7963914198ac7e12f0415113fe"
+content-hash = "d9a42e287fd15200dbf41fca010da13eace047283edb9f0cf7b14d27f4de4529"

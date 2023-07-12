@@ -114,7 +114,9 @@ def do_download(download_url: DecodedURL) -> str:
     contentname = pathjoin(partialdir, f"{uuid4()}.content")
     finalname = pathjoin(downloads_dir, basename)
 
-    with requests.get(download_url.to_uri().to_text(), stream=True, timeout=30) as response:
+    with requests.get(
+        download_url.to_uri().to_text(), stream=True, timeout=30
+    ) as response:
         response.raise_for_status()
         try:
             makedirs(partialdir, exist_ok=True)

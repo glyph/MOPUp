@@ -28,7 +28,7 @@ def alllinksin(
 ) -> Iterable[Tuple[Match[str], DecodedURL]]:
     """Get all the links in the given URL whose text matches the given pattern."""
     for a in html5lib.parse(
-        requests.get(u.to_text()).text, namespaceHTMLElements=False
+        requests.get(u.to_text(), timeout=30).text, namespaceHTMLElements=False
     ).findall(".//a"):
         match = e.fullmatch(a.text or "")
         if match is not None:
@@ -114,7 +114,9 @@ def do_download(download_url: DecodedURL) -> str:
     contentname = pathjoin(partialdir, f"{uuid4()}.content")
     finalname = pathjoin(downloads_dir, basename)
 
-    with requests.get(download_url.to_uri().to_text(), stream=True) as response:
+    with requests.get(
+        download_url.to_uri().to_text(), stream=True, timeout=30
+    ) as response:
         response.raise_for_status()
         try:
             makedirs(partialdir, exist_ok=True)

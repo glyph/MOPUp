@@ -93,7 +93,9 @@ jobs:
         if: always() && matrix.session == 'tests'
         uses: "actions/upload-artifact@v4"
         with:
+          include-hidden-files: true
           name: "coverage-data-${{ matrix.session }}-${{ matrix.python }}"
+          if-no-files-found: error  # 'warn' or 'ignore', defaults to `warn`
           path: ".coverage.*"
 
       - name: Upload documentation
@@ -135,6 +137,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: "coverage-data-*"
+          merge-multiple: true
+          path: .
 
       - name: Combine coverage data and display human readable report
         run: |

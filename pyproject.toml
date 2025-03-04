@@ -29,7 +29,7 @@ types-click = "^7.1.8"
 packaging = "^24.0"
 certifi = "^2024.6.2"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = ">=6.2.5"
 coverage = {extras = ["toml"], version = ">=6.1"}
 safety = ">=1.10.3"

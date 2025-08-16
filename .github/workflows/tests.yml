@@ -87,13 +87,12 @@ jobs:
 
       - name: Run Nox
         run: |
-          nox --force-color --python=${{ matrix.python }}
-          
-      - name: Run Destructive Tests
-        if: matrix.session == 'tests'
-        run: |
-          # Run destructive tests - coverage will append due to --parallel flag
-          nox --force-color --python=${{ matrix.python }} --session=tests-destructive
+          if [[ "${{ matrix.session }}" == "tests" ]]; then
+            # Run all tests including destructive ones in CI
+            nox --force-color --python=${{ matrix.python }} -- --destructive
+          else
+            nox --force-color --python=${{ matrix.python }}
+          fi
 
       - name: Upload coverage data
         if: always() && matrix.session == 'tests'

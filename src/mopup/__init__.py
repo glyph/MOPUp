@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+import json
 import sys
 from os import geteuid
 from pathlib import Path
@@ -389,49 +390,61 @@ def _collect_package_files(
             break
 
     for pkg in packages:
-        # Get package info to find install location
-        info_result = run(  # noqa: S603
-            ["/usr/sbin/pkgutil", "--pkg-info", pkg],
-            stdout=PIPE,
-            text=True,
+        # Export package info as plist and convert to JSON to preserve \r characters
+        # (plistlib's XML parsing normalizes \r to \n, but JSON preserves them)
+        plist_result = run(  # noqa: S603
+            ["/usr/sbin/pkgutil", "--export-plist", pkg],
+            capture_output=True,
         )
-        volume = ""
-        location = ""
-        if info_result.returncode == 0:
-            for line in info_result.stdout.strip().split("\n"):
-                if line.startswith("volume: "):
-                    volume = line.replace("volume: ", "").strip()
-                elif line.startswith("location: "):
-                    location = line.replace("location: ", "").strip()
 
-        if not volume or not location:
-            return all_files, all_dirs, package_root_dirs
+        if plist_result.returncode != 0:
+            print(f"Warning: Failed to get pkgutil plist for {pkg}", end="")
+            print(f":{err.decode()}" if (err := plist_result.stderr) else "")
+            continue
 
-        # Get files for this package
-        result = run(  # noqa: S603
-            ["/usr/sbin/pkgutil", "--files", pkg],
-            stdout=PIPE,
-            text=False,  # Get bytes to preserve \r
+        # Convert plist XML to JSON using plutil
+        json_result = run(  # noqa: S603
+            ["/usr/bin/plutil", "-convert", "json", "-o", "-", "-"],
+            input=plist_result.stdout,
+            capture_output=True,
         )
-        if result.returncode == 0:
-            for line in result.stdout.decode("utf-8", errors="replace").split("\n"):
-                if not line:
-                    continue
-                base_path = Path(volume) / location
-                full_path = base_path / line
 
-                package_root_dirs.add(base_path)
-                # Only add the base path to dirs to remove if it's Python-specific
-                # Don't add system directories like /usr/local/bin or /Applications
-                base_path_str = str(base_path)
-                if version and ("Python" in base_path_str or version in base_path_str):
-                    all_dirs.add(base_path)
+        if json_result.returncode != 0:
+            print(f"Warning: Failed to convert plist to JSON for {pkg}", end="")
+            print(f":{err.decode()}" if (err := plist_result.stderr) else "")
+            continue
 
-                if full_path.exists():
-                    if full_path.is_file() or full_path.is_symlink():
-                        all_files.add(full_path)
-                    elif full_path.is_dir():
-                        all_dirs.add(full_path)
+        try:
+            plist_data = json.loads(json_result.stdout)
+        except Exception as e:
+            print(f"Warning: Failed to parse JSON for {pkg}: {e}")
+            continue
+
+        # Get install location and volume
+        location = plist_data.get("install-location", "")
+        volume = plist_data.get("volume", "/")
+
+        if not location:
+            continue
+
+        base_path = Path(volume) / location
+        package_root_dirs.add(base_path)
+
+        # Only add the base path to dirs to remove if it's Python-specific
+        base_path_str = str(base_path)
+        if version and ("Python" in base_path_str or version in base_path_str):
+            all_dirs.add(base_path)
+
+        # Process all paths in the package
+        paths = plist_data.get("paths", {})
+        for relative_path in paths:
+            full_path = base_path / relative_path
+
+            if full_path.exists():
+                if full_path.is_file() or full_path.is_symlink():
+                    all_files.add(full_path)
+                elif full_path.is_dir():
+                    all_dirs.add(full_path)
 
     return all_files, all_dirs, package_root_dirs
 
@@ -450,7 +463,7 @@ def _find_lib_python_files(
             try:
                 lines = record_file.read_text().splitlines()
             except Exception as exc:
-                print(f"warning: can't read {record_file}: {exc}")
+                print(f"Warning: can't read {record_file}: {exc}")
                 continue
             for line in lines:
                 if not line.strip():

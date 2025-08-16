@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import collections
 import sys
-import os
+from os import geteuid
 from pathlib import Path
 from platform import mac_ver
 from plistlib import dumps as dumpplist
@@ -69,7 +69,7 @@ def choicechanges(pkgfile: str) -> str:
             setting = int(choice_id in all_installed)
             if setting:
                 print("selecting choice", each["choiceIdentifier"])
-                each["attributesetting"] = setting
+                each["attributeSetting"] = setting
     return dumpplist(dicts).decode()
 
 
@@ -178,7 +178,7 @@ def main(interactive: bool, force: bool, minor_upgrade: bool, dry_run: bool) -> 
 
 def uninstall(
     *,
-    version: str,
+    minor_release_version: str,
     dry_run: bool = False,
     interactive: bool = False,
     force: bool = False,
@@ -186,13 +186,17 @@ def uninstall(
     """
     Uninstall a specific Python version from the system.
 
-    `version` is a string like "3.13". If `dry_run` is True, only show what would be
-    removed without actually removing. If `interactive` is True, ask for confirmation
-    before proceeding. If `force` is True, remove even if extra files are present.
+    `minor_release_version` is a string like "3.13". If `dry_run` is True, only show
+    what would be removed without actually removing. If `interactive` is True, ask for
+    confirmation before proceeding. If `force` is True, remove even if extra files are
+    present.
     """
-    version_parts = version.split(".")
+    version_parts = minor_release_version.split(".")
     if len(version_parts) < 2:
-        print(f"Error: Invalid version format {version!r}. Use format like '3.13'")
+        print(
+            f"Error: Invalid version format {minor_release_version!r}."
+            f" Use format like '3.13'"
+        )
         return
 
     major = version_parts[0]
@@ -201,17 +205,17 @@ def uninstall(
     _ensure_sudo_if_needed(dry_run)
     packages = _find_python_packages(major, minor)
     if not packages:
-        print(f"No Python {version} installation found.")
+        print(f"No Python {minor_release_version} installation found.")
         return
 
-    print(f"Found Python {version} packages:")
+    print(f"Found Python {minor_release_version} packages:")
     for pkg in packages:
         print(f"  - {pkg}")
 
     all_files, all_dirs, package_root_dirs = _collect_package_files(packages)
 
     if not all_files and not all_dirs:
-        print(f"No files found for Python {version}.")
+        print(f"No files found for Python {minor_release_version}.")
         return
 
     ok_to_proceed, acceptable_extras = _check_extra_files(
@@ -275,9 +279,12 @@ def uninstall(
     _forget_packages(packages, dry_run)
 
     if dry_run:
-        print(f"\nDry run complete. Python {version} would be uninstalled.")
+        print(
+            f"\nDry run complete."
+            f" Python {minor_release_version} would be uninstalled."
+        )
     else:
-        print(f"\nPython {version} has been uninstalled.")
+        print(f"\nPython {minor_release_version} has been uninstalled.")
 
 
 def do_download(download_url: DecodedURL) -> str:
@@ -321,7 +328,7 @@ def do_download(download_url: DecodedURL) -> str:
 
 def _ensure_sudo_if_needed(dry_run: bool) -> None:
     """Ensure we have sudo privileges if needed, or relaunch with sudo."""
-    is_root = os.geteuid() == 0
+    is_root = geteuid() == 0
 
     # If not root and not dry_run, relaunch with sudo
     if not is_root and not dry_run:
@@ -340,12 +347,13 @@ def _ensure_sudo_if_needed(dry_run: bool) -> None:
                 sys.exit(1)
 
         # Relaunch ourselves with sudo
-        cmd = ["/usr/bin/sudo", executable] + argv
-        result = run(cmd)  # noqa: S603
+        cmd = ["/usr/bin/sudo", executable, "-BI"] + argv
+        result = run(cmd, cwd="/")  # noqa: S603
 
-        # Kill sudo session after completion
-        run(["/usr/bin/sudo", "-k"])  # noqa: S603
-        sys.exit(result.returncode)
+        if sudo_check.returncode != 0:
+            # Kill sudo session after completion if we enabled it
+            run(["/usr/bin/sudo", "-k"])  # noqa: S603
+            sys.exit(result.returncode)
 
 
 def _find_python_packages(major: str, minor: str) -> list[str]:

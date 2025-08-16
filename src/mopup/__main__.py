@@ -41,7 +41,10 @@ def main(
     """MOPUp."""
     if uninstall:
         libuninstall(
-            version=uninstall, dry_run=dry_run, interactive=interactive, force=force
+            minor_release_version=uninstall,
+            dry_run=dry_run,
+            interactive=interactive,
+            force=force,
         )
     else:
         libmain(

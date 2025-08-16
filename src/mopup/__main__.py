@@ -3,6 +3,7 @@
 import click
 
 from mopup import main as libmain
+from mopup import uninstall as libuninstall
 
 
 @click.command(
@@ -28,9 +29,24 @@ from mopup import main as libmain
     default=False,
     help="don't actually download or install anything even if we're not up to date",
 )
-def main(interactive: bool, force: bool, minor: bool, dry_run: bool) -> None:
+@click.option(
+    "--uninstall",
+    default=None,
+    help="uninstall a specific Python version (e.g., 3.13)",
+    type=str,
+)
+def main(
+    interactive: bool, force: bool, minor: bool, dry_run: bool, uninstall: str | None
+) -> None:
     """MOPUp."""
-    libmain(interactive=interactive, force=force, minor_upgrade=minor, dry_run=dry_run)
+    if uninstall:
+        libuninstall(
+            version=uninstall, dry_run=dry_run, interactive=interactive, force=force
+        )
+    else:
+        libmain(
+            interactive=interactive, force=force, minor_upgrade=minor, dry_run=dry_run
+        )
 
 
 if __name__ == "__main__":

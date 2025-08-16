@@ -32,6 +32,7 @@ nox.options.sessions = (
     "xdoctest",
     "docs-build",
 )
+# Note: tests-destructive is intentionally not in the default sessions list
 
 
 def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
@@ -134,9 +135,28 @@ def mypy(session: Session) -> None:
 
 @session(python=python_versions)
 def tests(session: Session) -> None:
-    """Run the test suite."""
+    """Run the test suite (non-destructive tests only)."""
     session.install(".")
     session.install("coverage[toml]", "pytest", "pygments")
+
+    # By default, skip destructive tests
+    pytest_args = list(session.posargs)
+    if not any("-m" in arg for arg in pytest_args):
+        pytest_args.extend(["-m", "not destructive"])
+
+    try:
+        session.run("coverage", "run", "--parallel", "-m", "pytest", *pytest_args)
+    finally:
+        if session.interactive:
+            session.notify("coverage", posargs=[])
+
+
+@session(python=python_versions, name="tests-destructive")
+def tests_destructive(session: Session) -> None:
+    """Run all tests including destructive ones."""
+    session.install(".")
+    session.install("coverage[toml]", "pytest", "pygments")
+
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
     finally:

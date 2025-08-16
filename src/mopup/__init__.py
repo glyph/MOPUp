@@ -431,6 +431,7 @@ def _collect_package_files(
         package_root_dirs.add(base_path)
 
         # Only add the base path to dirs to remove if it's Python-specific
+        # Don't add system directories like /usr/local/bin or /Applications
         base_path_str = str(base_path)
         if version and ("Python" in base_path_str or version in base_path_str):
             all_dirs.add(base_path)
@@ -567,7 +568,6 @@ def _check_extra_files(
             )
             return False, set()
 
-    # If force is used, add the problematic extras to acceptable list
     if force:
         acceptable_extras.update(extra_files)
 
@@ -614,8 +614,6 @@ def _remove_directories(
     removed_dirs: set[Path] = set()
     removed_files = removed_files or set()
     failed_dirs: dict[Path, str] = {}
-
-    # Track directories that would be successfully removed
 
     for path in sorted(all_dirs, key=str, reverse=True):
         try:

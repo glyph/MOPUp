@@ -71,6 +71,11 @@ source = ["mopup", "tests"]
 show_missing = true
 fail_under = 50
 
+[tool.pytest.ini_options]
+markers = [
+    "destructive: marks tests as potentially destructive (deselect with '-m \"not destructive\"')",
+]
+
 [tool.mypy]
 strict = true
 warn_unreachable = true

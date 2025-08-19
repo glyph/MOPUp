@@ -43,13 +43,17 @@ MOPUp is the mac\ **O**\ S **P**\ ython.org **Updater**.
 
 If you prefer to use the binary installers from python.org, it's easy to forget
 to update them.  This is a program that does that; it updates them.  Just ``pip
-install mopup`` into a virtualenv using the Python you are using, run ``mopup``
+install mopup`` into a virtualenv using the Python you are using, run ``mopup update``
 and provide your password when prompted. An administrator password is required,
 because the python.org binary installers require admin privileges.
 
 Normally, it does this using a CLI in the background, but if you'd prefer, you
-can run it with ``--interactive`` for it to launch the usual macOS GUI
+can run it with ``mopup update --interactive=true`` for it to launch the usual macOS GUI
 Installer app.
+
+You can also uninstall Python versions with ``mopup uninstall <version>`` (e.g.,
+``mopup uninstall 3.14``). Use ``--dry-run=true`` to see what would be removed
+without actually removing anything.
 
 Installation
 ------------

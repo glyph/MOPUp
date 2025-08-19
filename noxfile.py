@@ -134,9 +134,11 @@ def mypy(session: Session) -> None:
 
 @session(python=python_versions)
 def tests(session: Session) -> None:
-    """Run the test suite."""
+    """Run the test suite (non-destructive tests only)."""
     session.install(".")
     session.install("coverage[toml]", "pytest", "pygments")
+
+    # conftest.py now handles skipping destructive tests by default
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
     finally:

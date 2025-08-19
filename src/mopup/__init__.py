@@ -7,6 +7,7 @@ import json
 import re
 import sys
 from os import geteuid
+from os.path import lexists  # Path.exists(follow_symlinks=False) was only added in 3.12
 from pathlib import Path
 from platform import mac_ver
 from plistlib import dumps as dumpplist
@@ -677,7 +678,7 @@ def _remove_files(
 
     for path in sorted(all_files, key=str, reverse=True):  # Remove in reverse order
         try:
-            if path.exists(follow_symlinks=False):
+            if lexists(path):
                 if path.is_symlink() or path.is_file():
                     if not dry_run:
                         path.unlink()

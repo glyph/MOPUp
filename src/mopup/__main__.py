@@ -4,6 +4,7 @@ import sys
 
 import click
 
+from mopup import MOPUpValueError
 from mopup import list_installed as liblist
 from mopup import main as libmain
 from mopup import uninstall as libuninstall
@@ -28,8 +29,12 @@ def main() -> None:
          Run this command and enter your administrator password to install the
          most recent version from Python.org that matches your major/minor
          version.
+
+         Optionally specify a VERSION (e.g., '3.13') to update a specific Python
+         installation instead of auto-detecting the current version.
          """
 )
+@click.argument("version", required=False, type=str)
 @click.option("--interactive", default=False, help="use the installer GUI", type=bool)
 @click.option(
     "--force", default=False, help="reinstall python even if it's up to date", type=bool
@@ -46,9 +51,22 @@ def main() -> None:
     help="don't actually download or install anything even if we're not up to date",
     type=bool,
 )
-def update(interactive: bool, force: bool, minor: bool, dry_run: bool) -> None:
+def update(
+    version: str | None, interactive: bool, force: bool, minor: bool, dry_run: bool
+) -> None:
     """Update Python to the latest version."""
-    libmain(interactive=interactive, force=force, minor_upgrade=minor, dry_run=dry_run)
+    try:
+        libmain(
+            target_version=version,
+            interactive=interactive,
+            force=force,
+            minor_upgrade=minor,
+            dry_run=dry_run,
+        )
+    except RuntimeError as rexc:
+        print(rexc, file=sys.stderr)
+    except MOPUpValueError as vexc:
+        print(vexc, file=sys.stderr)
 
 
 @main.command(
@@ -64,6 +82,8 @@ def list() -> None:
         liblist()
     except RuntimeError as rexc:
         print(rexc, file=sys.stderr)
+    except MOPUpValueError as vexc:
+        print(vexc, file=sys.stderr)
 
 
 @main.command(
@@ -103,9 +123,7 @@ def uninstall(version: str, dry_run: bool, interactive: bool, force: bool) -> No
         )
     except RuntimeError as rexc:
         print(rexc, file=sys.stderr)
-    except ValueError as vexc:
-        if not str(vexc).startswith("Invalid version"):
-            raise
+    except MOPUpValueError as vexc:
         print(vexc, file=sys.stderr)
 
 

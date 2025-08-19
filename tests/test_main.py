@@ -18,6 +18,36 @@ def test_update_dry_run(runner: CliRunner) -> None:
     assert result.exit_code == 0
 
 
+def test_update_specific_version_dry_run(runner: CliRunner) -> None:
+    """Test updating a specific Python version."""
+    import sys
+
+    # Try to update the current Python version specifically
+    version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    result = runner.invoke(__main__.main, ["update", version, "--dry-run=true"])
+    assert result.exit_code == 0
+
+    # Check that it detected the version and checked for updates
+    assert "this version:" in result.output.lower()
+    assert "new version:" in result.output.lower()
+    assert "update" in result.output.lower()
+
+
+def test_update_nonexistent_version(runner: CliRunner) -> None:
+    """Test updating a non-existent Python version."""
+    # Use a version that's very unlikely to be installed
+    result = runner.invoke(__main__.main, ["update", "2.7", "--dry-run=true"])
+    assert result.exit_code == 0
+    assert "No Python 2.7 installation found" in result.output
+
+
+def test_update_invalid_version_format(runner: CliRunner) -> None:
+    """Test updating with invalid version format."""
+    result = runner.invoke(__main__.main, ["update", "3", "--dry-run=true"])
+    assert result.exit_code == 0
+    assert "Invalid version" in result.output
+
+
 def test_list(runner: CliRunner) -> None:
     """Test list command."""
     result = runner.invoke(__main__.main, ["list"])

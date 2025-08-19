@@ -53,6 +53,10 @@ PkgInfo = TypedDict(
 )
 
 
+class MOPUpValueError(ValueError):
+    """Deliberate application-specific value errors."""
+
+
 def alllinksin(
     u: DecodedURL, e: Pattern[str]
 ) -> Iterable[tuple[Match[str], DecodedURL]]:
@@ -103,7 +107,13 @@ def choicechanges(pkgfile: str) -> str:
     return dumpplist(dicts).decode()
 
 
-def main(interactive: bool, force: bool, minor_upgrade: bool, dry_run: bool) -> None:
+def main(
+    target_version: str | None,
+    interactive: bool,
+    force: bool,
+    minor_upgrade: bool,
+    dry_run: bool,
+) -> None:
     """Do an update."""
     _ensure_sudo_if_needed(dry_run)
 
@@ -111,17 +121,40 @@ def main(interactive: bool, force: bool, minor_upgrade: bool, dry_run: bool) -> 
     ver = compile_re(r"(\d+)\.(\d+).(\d+)/")
     macpkg = compile_re(r"python-(\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?)-macosx?(\d+).pkg")
 
-    thismajor, thisminor, thismicro, releaselevel, serial = version_info
-    level = {
-        "alpha": "a",
-        "beta": "b",
-        "candidate": "rc",
-        "final": "",
-    }[releaselevel]
+    if target_version:
+        target_ver = Version(target_version)
+        for pkg, _short_name, version in _find_python_packages(target_ver):
+            try:
+                python_exe = _get_python_executable(pkg, version)
+                exact_version_str = _get_exact_version(python_exe)
+                if exact_version_str:
+                    thispkgver = Version(exact_version_str)
+                    break
+            except LookupError:
+                continue  # not every Python package contains executables
+            except Exception as e:
+                print(f"Warning: {e}")
+                continue
+        else:
+            raise RuntimeError(f"No Python {target_version} installation found")
 
-    thispkgver = Version(
-        f"{thismajor}.{thisminor}.{thismicro}" + (f".{level}{serial}" if level else "")
-    )
+        thismajor = target_ver.major
+        thisminor = target_ver.minor
+        thismicro = thispkgver.micro or 0
+    else:
+        # Auto-detect from current Python
+        thismajor, thisminor, thismicro, releaselevel, serial = version_info
+        level = {
+            "alpha": "a",
+            "beta": "b",
+            "candidate": "rc",
+            "final": "",
+        }[releaselevel]
+
+        thispkgver = Version(
+            f"{thismajor}.{thisminor}.{thismicro}"
+            + (f".{level}{serial}" if level else "")
+        )
 
     # {macos, major, minor: [(Version, URL)]}
     # major, minor, micro, macos: [(version, URL)]
@@ -204,49 +237,74 @@ def main(interactive: bool, force: bool, minor_upgrade: bool, dry_run: bool) -> 
     print("Complete.")
 
 
+def _get_python_executable(pkg: str, version: Version) -> Path:
+    """Get the Python executable path for a package.
+
+    Raises RuntimeError if the executable cannot be found.
+    """
+    plist_data = _get_package_metadata_json(pkg)
+
+    location = plist_data.get("install-location", "")
+    volume = plist_data.get("volume", "/")
+    paths = plist_data.get("paths", {})
+    if not location:
+        raise MOPUpValueError(f"No install location found for {pkg}")
+
+    base_path = Path(volume) / location
+    exe_paths = [
+        f"Versions/{version}/bin/python{version}t",
+        f"Versions/{version}/bin/python{version}",
+    ]
+    for exe_path in exe_paths:
+        exe_meta = paths.get(exe_path, _empty_pkgfileinfo(pkg))
+        is_executable = exe_meta.get("mode", 0) & 0o111
+        if is_executable:
+            return base_path / exe_path
+
+    raise LookupError(f"No Python executable found for {pkg}")
+
+
+def _get_exact_version(python_exe: Path) -> str:
+    """Get the exact version string from a Python executable.
+
+    Raises RuntimeError if the version cannot be determined.
+    """
+    if not python_exe.is_file():
+        raise RuntimeError(f"Python executable not found: {python_exe}")
+
+    version_result = run(  # noqa: S603
+        [str(python_exe), "-c", "import sys; print(sys.version)"],
+        capture_output=True,
+        text=True,
+    )
+    if version_result.returncode != 0:
+        raise RuntimeError(
+            f"Failed to get version from {python_exe}: {version_result.stderr}"
+        )
+
+    return version_result.stdout.split(" ", 1)[0]
+
+
 def list_installed() -> None:
     """List all Python versions installed with official Python.org installers."""
     version_executables: list[tuple[Version, str, Path]] = []
     for pkg, _short_name, version in _find_python_packages():
         try:
-            plist_data = _get_package_metadata_json(pkg)
+            python_exe = _get_python_executable(pkg, version)
+            version_executables.append((version, pkg, python_exe))
+        except LookupError:
+            continue  # not every Python package contains executables
         except Exception as e:
             print(f"Warning: {e}")
             continue
 
-        location = plist_data.get("install-location", "")
-        volume = plist_data.get("volume", "/")
-        paths = plist_data.get("paths", {})
-        if not location:
-            continue
-
-        base_path = Path(volume) / location
-        exe_paths = [
-            f"Versions/{version}/bin/python{version}t",
-            f"Versions/{version}/bin/python{version}",
-        ]
-        for exe_path in exe_paths:
-            exe_meta = paths.get(exe_path, _empty_pkgfileinfo(pkg))
-            is_executable = exe_meta.get("mode", 0) & 0o111
-            if is_executable:
-                version_executables.append((version, pkg, base_path / exe_path))
-                break
-
     version_executables.sort()
 
     for version, pkg, python_exe in version_executables:
-        exact_version = None
-        if python_exe.is_file():
-            version_result = run(  # noqa: S603
-                [str(python_exe), "-c", "import sys; print(sys.version)"],
-                capture_output=True,
-                text=True,
-            )
-            if version_result.returncode == 0:
-                exact_version = version_result.stdout.split(" ", 1)[0]
-        if exact_version:
+        try:
+            exact_version = _get_exact_version(python_exe)
             print(f"{exact_version:<12}{pkg:<44}{python_exe}")
-        else:
+        except Exception:
             print(f"{version:<12}{pkg:<44}")
 
 
@@ -465,7 +523,7 @@ def _find_python_packages(
 
     if version is not None:
         if len(version.release) != 2 or version.pre or version.post:
-            raise ValueError(
+            raise MOPUpValueError(
                 f"Invalid version '{version}', expected 'major.minor' (like '3.13')"  # noqa: B907
             )
 

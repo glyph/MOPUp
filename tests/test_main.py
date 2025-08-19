@@ -18,6 +18,46 @@ def test_update_dry_run(runner: CliRunner) -> None:
     assert result.exit_code == 0
 
 
+def test_list(runner: CliRunner) -> None:
+    """Test list command."""
+    result = runner.invoke(__main__.main, ["list"])
+    assert result.exit_code == 0
+
+    # Parse the output - each line should have 3 columns:
+    # version (left-aligned, 12 chars), package (left-aligned, 44 chars), path
+    lines = result.output.strip().split("\n")
+
+    # Filter out warning lines that start with "Warning:"
+    data_lines = [line for line in lines if line and not line.startswith("Warning:")]
+
+    if data_lines:
+        # Verify the structure of each line
+        for line in data_lines:
+            # Check that we have at least 56 characters (12 + 44 for the first two cols)
+            assert len(line) >= 56, f"Line too short: {line}"
+
+            # Extract the three columns
+            version = line[:12].strip()
+            package = line[12:56].strip()
+            path = line[56:].strip() if len(line) > 56 else ""
+
+            # Validate version format (e.g., "3.13.7" or "3.14.0rc2")
+            assert version, f"Missing version in line: {line}"
+            # Version should start with a digit
+            assert version[0].isdigit(), f"Invalid version format: {version}"
+
+            # Validate package name format
+            assert package.startswith(
+                "org.python.Python."
+            ), f"Invalid package name: {package}"
+            assert "-" in package, f"Package missing version suffix: {package}"
+
+            # If there's a path, validate it
+            if path:
+                assert path.startswith("/"), f"Path should be absolute: {path}"
+                assert "python" in path.lower(), f"Path should contain 'python': {path}"
+
+
 def test_uninstall_dry_run(runner: CliRunner) -> None:
     """Test uninstall with dry-run mode."""
     # Get the current Python version
@@ -36,7 +76,7 @@ def test_uninstall_invalid_version(runner: CliRunner) -> None:
     """Test uninstall with invalid version format."""
     result = runner.invoke(__main__.main, ["uninstall", "3", "--dry-run=true"])
     assert result.exit_code == 0
-    assert "Invalid version format" in result.output
+    assert "Invalid version '3'" in result.output
 
 
 def test_uninstall_nonexistent_version(runner: CliRunner) -> None:

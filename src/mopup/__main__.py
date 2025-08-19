@@ -1,7 +1,10 @@
 """Command-line interface."""
 
+import sys
+
 import click
 
+from mopup import list_installed as liblist
 from mopup import main as libmain
 from mopup import uninstall as libuninstall
 
@@ -50,6 +53,21 @@ def update(interactive: bool, force: bool, minor: bool, dry_run: bool) -> None:
 
 @main.command(
     help="""
+         List all Python versions installed with official Python.org installers.
+
+         Shows the exact versions of Python installed on the system.
+         """
+)
+def list() -> None:
+    """List all Python installations."""
+    try:
+        liblist()
+    except RuntimeError as rexc:
+        print(rexc, file=sys.stderr)
+
+
+@main.command(
+    help="""
          Uninstall a specific Python version.
 
          Removes all files and packages associated with the specified Python version.
@@ -76,12 +94,19 @@ def update(interactive: bool, force: bool, minor: bool, dry_run: bool) -> None:
 )
 def uninstall(version: str, dry_run: bool, interactive: bool, force: bool) -> None:
     """Uninstall a specific Python version."""
-    libuninstall(
-        minor_release_version=version,
-        dry_run=dry_run,
-        interactive=interactive,
-        force=force,
-    )
+    try:
+        libuninstall(
+            minor_release_version=version,
+            dry_run=dry_run,
+            interactive=interactive,
+            force=force,
+        )
+    except RuntimeError as rexc:
+        print(rexc, file=sys.stderr)
+    except ValueError as vexc:
+        if not str(vexc).startswith("Invalid version"):
+            raise
+        print(vexc, file=sys.stderr)
 
 
 if __name__ == "__main__":

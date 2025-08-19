@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import json
+import re
 import sys
 from os import geteuid
 from pathlib import Path
@@ -14,7 +15,7 @@ from re import compile as compile_re
 from subprocess import PIPE, run  # noqa: S404
 from sys import argv, executable, version_info
 from tempfile import NamedTemporaryFile
-from typing import Iterable, Match, Pattern
+from typing import cast, Dict, Iterable, Iterator, Match, Pattern, TypedDict
 from uuid import uuid4
 
 import html5lib
@@ -22,6 +23,33 @@ import requests
 from hyperlink import DecodedURL
 from packaging.version import Version, parse
 from rich.progress import Progress
+
+
+PKG_RE = re.compile(r"^org\.python\.Python\.(?P<name>.*)-(?P<version>\d+\.\d+)$")
+
+PkgFileInfo = TypedDict(
+    "PkgFileInfo",
+    {
+        "pkgid": "str",
+        "pkg-version": "str",
+        "uid": int,
+        "gid": int,
+        "mode": int,
+        "install-time": int,
+    },
+)
+PkgInfo = TypedDict(
+    "PkgInfo",
+    {
+        "pkgid": "str",
+        "pkg-version": "str",
+        "volume": "str",
+        "install-location": "str",
+        "paths": Dict[str, PkgFileInfo],
+        "install-time": int,
+        "receipt-plist-version": int,
+    },
+)
 
 
 def alllinksin(
@@ -141,9 +169,7 @@ def main(interactive: bool, force: bool, minor_upgrade: bool, dry_run: bool) -> 
 
     best_ver, download_url = sorted(download_urls, reverse=True)[0]
 
-    # TODO: somehow flake8 in pre-commit thinks that this semicolon is in the
-    # *code* and not in a string.
-    print(f"this version: {thispkgver}; new version: {best_ver}")  # noqa
+    print(f"this version: {thispkgver}; new version: {best_ver}")
     update_needed = best_ver > thispkgver
 
     print(
@@ -177,6 +203,52 @@ def main(interactive: bool, force: bool, minor_upgrade: bool, dry_run: bool) -> 
     print("Complete.")
 
 
+def list_installed() -> None:
+    """List all Python versions installed with official Python.org installers."""
+    version_executables: list[tuple[Version, str, Path]] = []
+    for pkg, _short_name, version in _find_python_packages():
+        try:
+            plist_data = _get_package_metadata_json(pkg)
+        except Exception as e:
+            print(f"Warning: {e}")
+            continue
+
+        location = plist_data.get("install-location", "")
+        volume = plist_data.get("volume", "/")
+        paths = plist_data.get("paths", {})
+        if not location:
+            continue
+
+        base_path = Path(volume) / location
+        exe_paths = [
+            f"Versions/{version}/bin/python{version}t",
+            f"Versions/{version}/bin/python{version}",
+        ]
+        for exe_path in exe_paths:
+            exe_meta = paths.get(exe_path, _empty_pkgfileinfo(pkg))
+            is_executable = exe_meta.get("mode", 0) & 0o111
+            if is_executable:
+                version_executables.append((version, pkg, base_path / exe_path))
+                break
+
+    version_executables.sort()
+
+    for version, pkg, python_exe in version_executables:
+        exact_version = None
+        if python_exe.is_file():
+            version_result = run(  # noqa: S603
+                [str(python_exe), "-c", "import sys; print(sys.version)"],
+                capture_output=True,
+                text=True,
+            )
+            if version_result.returncode == 0:
+                exact_version = version_result.stdout.split(" ", 1)[0]
+        if exact_version:
+            print(f"{exact_version:<12}{pkg:<44}{python_exe}")
+        else:
+            print(f"{version:<12}{pkg:<44}")
+
+
 def uninstall(
     *,
     minor_release_version: str,
@@ -192,19 +264,12 @@ def uninstall(
     confirmation before proceeding. If `force` is True, remove even if extra files are
     present.
     """
-    version_parts = minor_release_version.split(".")
-    if len(version_parts) < 2:
-        print(
-            f"Error: Invalid version format {minor_release_version!r}."
-            f" Use format like '3.13'"
-        )
-        return
-
-    major = version_parts[0]
-    minor = version_parts[1]
-
     _ensure_sudo_if_needed(dry_run)
-    packages = _find_python_packages(major, minor)
+    version = Version(minor_release_version)
+
+    packages = []
+    packages = [p[0] for p in _find_python_packages(version)]
+
     if not packages:
         print(f"No Python {minor_release_version} installation found.")
         return
@@ -219,9 +284,7 @@ def uninstall(
         print(f"No files found for Python {minor_release_version}.")
         return
 
-    ok_to_proceed, acceptable_extras = _check_extra_files(
-        all_files, major, minor, force
-    )
+    ok_to_proceed, acceptable_extras = _check_extra_files(all_files, version, force)
     if not ok_to_proceed:
         return
 
@@ -357,21 +420,70 @@ def _ensure_sudo_if_needed(dry_run: bool) -> None:
             sys.exit(result.returncode)
 
 
-def _find_python_packages(major: str, minor: str) -> list[str]:
-    """Find all Python packages for a specific version."""
+def _get_package_metadata_json(pkg: str) -> PkgInfo:
+    """
+    Get package metadata as JSON dictionary.
+
+    Raises an exception if the package metadata cannot be retrieved or parsed.
+    """
+    # Export package info as plist
+    plist_result = run(  # noqa: S603
+        ["/usr/sbin/pkgutil", "--export-plist", pkg],
+        capture_output=True,
+    )
+
+    if plist_result.returncode != 0:
+        error_msg = (
+            plist_result.stderr.decode() if plist_result.stderr else "Unknown error"
+        )
+        raise RuntimeError(f"Failed to get pkgutil plist for {pkg}: {error_msg}")
+
+    # Convert plist XML to JSON using plutil
+    json_result = run(  # noqa: S603
+        ["/usr/bin/plutil", "-convert", "json", "-o", "-", "-"],
+        input=plist_result.stdout,
+        capture_output=True,
+    )
+
+    if json_result.returncode != 0:
+        error_msg = (
+            json_result.stderr.decode() if json_result.stderr else "Unknown error"
+        )
+        raise RuntimeError(f"Failed to convert plist to JSON for {pkg}: {error_msg}")
+
+    return cast(PkgInfo, json.loads(json_result.stdout))
+
+
+def _find_python_packages(
+    version: Version | None = None,
+) -> Iterator[tuple[str, str, Version]]:
+    """Generate (full pkg name, short name, version) for installed Pythons.
+
+    If `version` is given, only the packages matching that version will be returned.
+    """
+
+    if version is not None:
+        if len(version.release) != 2 or version.pre or version.post:
+            raise ValueError(
+                f"Invalid version '{version}', expected 'major.minor' (like '3.13')"  # noqa: B907
+            )
+
     result = run(  # noqa: S603
         ["/usr/sbin/pkgutil", "--pkgs"],
         stdout=PIPE,
         text=True,
     )
 
-    packages = [
-        pkg
-        for pkg in result.stdout.strip().split("\n")
-        if pkg.startswith("org.python.Python.") and pkg.endswith(f"-{major}.{minor}")
-    ]
+    if result.returncode != 0:
+        error_msg = result.stderr if result.stderr else "Unknown error"
+        raise RuntimeError(f"Failed to list packages with pkgutil: {error_msg}")
 
-    return packages
+    for pkg in result.stdout.strip().split("\n"):
+        if match := PKG_RE.match(pkg):
+            short_name = match["name"]
+            actual_version = Version(match["version"])
+            if version is None or version == actual_version:
+                yield pkg, short_name, actual_version
 
 
 def _collect_package_files(
@@ -390,34 +502,10 @@ def _collect_package_files(
             break
 
     for pkg in packages:
-        # Export package info as plist and convert to JSON to preserve \r characters
-        # (plistlib's XML parsing normalizes \r to \n, but JSON preserves them)
-        plist_result = run(  # noqa: S603
-            ["/usr/sbin/pkgutil", "--export-plist", pkg],
-            capture_output=True,
-        )
-
-        if plist_result.returncode != 0:
-            print(f"Warning: Failed to get pkgutil plist for {pkg}", end="")
-            print(f":{err.decode()}" if (err := plist_result.stderr) else "")
-            continue
-
-        # Convert plist XML to JSON using plutil
-        json_result = run(  # noqa: S603
-            ["/usr/bin/plutil", "-convert", "json", "-o", "-", "-"],
-            input=plist_result.stdout,
-            capture_output=True,
-        )
-
-        if json_result.returncode != 0:
-            print(f"Warning: Failed to convert plist to JSON for {pkg}", end="")
-            print(f":{err.decode()}" if (err := plist_result.stderr) else "")
-            continue
-
         try:
-            plist_data = json.loads(json_result.stdout)
+            plist_data = _get_package_metadata_json(pkg)
         except Exception as e:
-            print(f"Warning: Failed to parse JSON for {pkg}: {e}")
+            print(f"Warning: {e}")
             continue
 
         # Get install location and volume
@@ -451,10 +539,10 @@ def _collect_package_files(
 
 
 def _find_lib_python_files(
-    check_path: Path, major: str, minor: str, abiflags: str
+    check_path: Path, version: Version, abiflags: str
 ) -> set[Path]:
     ignore_files: set[Path] = set()
-    lib_python = check_path / "lib" / f"python{major}.{minor}{abiflags}"
+    lib_python = check_path / "lib" / f"python{version}{abiflags}"
     site_packages = lib_python / "site-packages"
     ensurepip_bundled = lib_python / "ensurepip" / "_bundled"
 
@@ -491,7 +579,7 @@ def _find_lib_python_files(
     if abiflags == "t":
         bin_python = check_path / "bin"
         if bin_python.exists():
-            for pip_name in (f"pip{major}t", f"pip{major}.{minor}t"):
+            for pip_name in (f"pip{version.major}t", f"pip{version}t"):
                 pip_path = bin_python / pip_name
                 if pip_path.exists():
                     ignore_files.add(pip_path)
@@ -500,7 +588,7 @@ def _find_lib_python_files(
 
 
 def _check_extra_files(
-    all_files: set[Path], major: str, minor: str, force: bool
+    all_files: set[Path], version: Version, force: bool
 ) -> tuple[bool, set[Path]]:
     """
     Check for extra files not managed by packages.
@@ -513,7 +601,7 @@ def _check_extra_files(
     check_dirs: set[Path] = set()
 
     # Group files by their parent directories to find Python-specific roots
-    version_roots = {f"Python {major}.{minor}", f"{major}.{minor}"}
+    version_roots = {f"Python {version}", str(version)}
     for file_path in all_files:
         for parent in file_path.parents:
             if parent.name in version_roots:
@@ -523,8 +611,8 @@ def _check_extra_files(
     # Build a set of files to ignore: pip-installed packages and ensurepip-related stuff
     ignore_files: set[Path] = set()
     for check_path in check_dirs:
-        ignore_files.update(_find_lib_python_files(check_path, major, minor, ""))
-        ignore_files.update(_find_lib_python_files(check_path, major, minor, "t"))
+        ignore_files.update(_find_lib_python_files(check_path, version, ""))
+        ignore_files.update(_find_lib_python_files(check_path, version, "t"))
 
     # Walk these directories and find files not in our package list
     for check_path in check_dirs:
@@ -698,3 +786,14 @@ def _forget_packages(packages: list[str], dry_run: bool = False) -> None:
                 print(f"Warning: Failed to forget package {pkg}: {result.stderr}")
             else:
                 print(f"  - Forgot {pkg}")
+
+
+def _empty_pkgfileinfo(pkgid: str, install_time: int = 0) -> PkgFileInfo:
+    return {
+        "pkgid": pkgid,
+        "pkg-version": "0",
+        "uid": 0,
+        "gid": 0,
+        "mode": 0,
+        "install-time": install_time,
+    }

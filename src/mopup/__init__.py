@@ -54,7 +54,11 @@ PkgInfo = TypedDict(
 
 
 class MOPUpValueError(ValueError):
-    """Deliberate application-specific value errors."""
+    """Deliberate application-specific value errors. Some value was unexpected."""
+
+
+class MOPUpLookupError(LookupError):
+    """Deliberate application-specific lookup errors. Something wasn't found."""
 
 
 def alllinksin(
@@ -130,7 +134,7 @@ def main(
                 if exact_version_str:
                     thispkgver = Version(exact_version_str)
                     break
-            except LookupError:
+            except MOPUpLookupError:
                 continue  # not every Python package contains executables
             except Exception as e:
                 print(f"Warning: {e}")
@@ -261,7 +265,7 @@ def _get_python_executable(pkg: str, version: Version) -> Path:
         if is_executable:
             return base_path / exe_path
 
-    raise LookupError(f"No Python executable found for {pkg}")
+    raise MOPUpLookupError(f"No Python executable found for {pkg}")
 
 
 def _get_exact_version(python_exe: Path) -> str:
@@ -292,7 +296,7 @@ def list_installed() -> None:
         try:
             python_exe = _get_python_executable(pkg, version)
             version_executables.append((version, pkg, python_exe))
-        except LookupError:
+        except MOPUpLookupError:
             continue  # not every Python package contains executables
         except Exception as e:
             print(f"Warning: {e}")

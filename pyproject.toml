@@ -27,7 +27,7 @@ hyperlink = "*"
 rich = ">=12.4.4,<15.0.0"
 types-click = "^7.1.8"
 packaging = ">=24,<26"
-certifi = ">=2024.6.2,<2026.0.0"
+certifi = ">=2024.6.2,<2027.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.2.5"

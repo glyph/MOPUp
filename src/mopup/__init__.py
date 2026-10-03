@@ -16,7 +16,9 @@ from re import compile as compile_re
 from subprocess import PIPE, run  # noqa: S404
 from sys import argv, executable, version_info
 from tempfile import NamedTemporaryFile
-from typing import cast, Dict, Iterable, Iterator, Match, Pattern, TypedDict
+from typing import cast, TypedDict
+from collections.abc import Iterable, Iterator
+from re import Match, Pattern
 from uuid import uuid4
 
 import html5lib
@@ -46,7 +48,7 @@ PkgInfo = TypedDict(
         "pkg-version": "str",
         "volume": "str",
         "install-location": "str",
-        "paths": Dict[str, PkgFileInfo],
+        "paths": dict[str, PkgFileInfo],
         "install-time": int,
         "receipt-plist-version": int,
     },

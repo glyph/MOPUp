@@ -677,6 +677,12 @@ def _check_extra_files(
         ignore_files.update(_find_lib_python_files(check_path, version, ""))
         ignore_files.update(_find_lib_python_files(check_path, version, "t"))
 
+    # Anything inside an ignored directory (e.g. a .dist-info) is also ignored.
+    # Work out which entries are directories once, up front: doing it inside the
+    # loop below meant a stat call per ignored entry per extra file, which takes
+    # many minutes on an installation with a few hundred packages.
+    ignored_dirs = {ignored for ignored in ignore_files if ignored.is_dir()}
+
     # Walk these directories and find files not in our package list
     for check_path in check_dirs:
         for item in check_path.rglob("*"):
@@ -690,11 +696,7 @@ def _check_extra_files(
                     item.suffix == ".pyc"
                     or item.is_symlink()
                     or item in ignore_files
-                    or any(
-                        item.is_relative_to(ignored)
-                        for ignored in ignore_files
-                        if ignored.is_dir()
-                    )
+                    or any(parent in ignored_dirs for parent in item.parents)
                 ):
                     acceptable_extras.add(item)
                 else:

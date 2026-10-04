@@ -119,8 +119,6 @@ def main(
     dry_run: bool,
 ) -> None:
     """Do an update."""
-    _ensure_sudo_if_needed(dry_run)
-
     this_mac_ver = tuple(map(int, mac_ver()[0].split(".")[:2]))
     ver = compile_re(r"(\d+)\.(\d+).(\d+)/")
     macpkg = compile_re(r"python-(\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?)-macosx?(\d+).pkg")
@@ -227,7 +225,8 @@ def main(
         else:
             tf.write(choicechanges(finalname))
             tf.flush()
-            # We already have sudo from _ensure_sudo_if_needed
+            # Only the installer itself needs admin privileges, so this is the
+            # first (and only) point at which we ask for a password.
             argv = [
                 "/usr/sbin/installer",
                 "-applyChoiceChangesXML",
@@ -237,6 +236,9 @@ def main(
                 "-target",
                 "/",
             ]
+            if geteuid() != 0:
+                print("Enter your administrative password to run the update:")
+                argv = ["/usr/bin/sudo"] + argv
         run(argv)  # noqa: S603
     print("Complete.")
 
@@ -327,7 +329,6 @@ def uninstall(
     confirmation before proceeding. If `force` is True, remove even if extra files are
     present.
     """
-    _ensure_sudo_if_needed(dry_run)
     version = Version(minor_release_version)
 
     packages = []
@@ -336,6 +337,9 @@ def uninstall(
     if not packages:
         print(f"No Python {minor_release_version} installation found.")
         return
+
+    # Only now that we know there is something to remove do we need privileges
+    _ensure_sudo_if_needed(dry_run)
 
     print(f"Found Python {minor_release_version} packages:")
     for pkg in packages:

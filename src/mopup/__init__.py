@@ -112,13 +112,38 @@ def choicechanges(pkgfile: str) -> str:
 
 
 def main(
+    target_versions: tuple[str, ...],
+    interactive: bool,
+    force: bool,
+    minor_upgrade: bool,
+    dry_run: bool,
+) -> None:
+    """Update one or more Python installations."""
+    if not target_versions:
+        _update_one(None, interactive, force, minor_upgrade, dry_run)
+        return
+
+    for index, target_version in enumerate(target_versions):
+        if index:
+            print()
+
+        if len(target_versions) >= 2:
+            print(f"Python {target_version}:")
+
+        try:
+            _update_one(target_version, interactive, force, minor_upgrade, dry_run)
+        except (RuntimeError, MOPUpValueError) as exc:
+            print(exc, file=sys.stderr)
+
+
+def _update_one(
     target_version: str | None,
     interactive: bool,
     force: bool,
     minor_upgrade: bool,
     dry_run: bool,
 ) -> None:
-    """Do an update."""
+    """Do an update of a single Python installation."""
     this_mac_ver = tuple(map(int, mac_ver()[0].split(".")[:2]))
     ver = compile_re(r"(\d+)\.(\d+).(\d+)/")
     macpkg = compile_re(r"python-(\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?)-macosx?(\d+).pkg")

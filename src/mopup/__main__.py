@@ -30,11 +30,12 @@ def main() -> None:
          most recent version from Python.org that matches your major/minor
          version.
 
-         Optionally specify a VERSION (e.g., '3.13') to update a specific Python
-         installation instead of auto-detecting the current version.
+         Optionally specify one or more VERSIONS (e.g., '3.13', or '3.13 3.14')
+         to update specific Python installations instead of auto-detecting the
+         current version.
          """
 )
-@click.argument("version", required=False, type=str)
+@click.argument("versions", nargs=-1, type=str)
 @click.option("--interactive", default=False, help="use the installer GUI", type=bool)
 @click.option(
     "--force", default=False, help="reinstall python even if it's up to date", type=bool
@@ -52,12 +53,16 @@ def main() -> None:
     type=bool,
 )
 def update(
-    version: str | None, interactive: bool, force: bool, minor: bool, dry_run: bool
+    versions: tuple[str, ...],
+    interactive: bool,
+    force: bool,
+    minor: bool,
+    dry_run: bool,
 ) -> None:
     """Update Python to the latest version."""
     try:
         libmain(
-            target_version=version,
+            target_versions=versions,
             interactive=interactive,
             force=force,
             minor_upgrade=minor,

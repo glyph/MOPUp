@@ -15,6 +15,14 @@ Upgrade your currently running Python to a newer minor release
 
     mopup update --minor=true
 
+Update a specific Python version, rather than the one currently running::
+
+    mopup update 3.13
+
+Update several Python versions in one go::
+
+    mopup update 3.13 3.14 3.15
+
 Update Python using the GUI installer::
 
     mopup update --interactive=true

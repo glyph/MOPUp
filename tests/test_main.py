@@ -141,9 +141,17 @@ def test_main_update_real(runner: CliRunner) -> None:
 
 
 @pytest.mark.destructive
-def test_uninstall_interactive(runner: CliRunner) -> None:
+def test_uninstall_interactive(
+    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test uninstall with interactive mode (won't actually uninstall)."""
     import sys
+
+    import mopup
+
+    # The test answers "no" at the prompt and never removes anything, so it
+    # doesn't need sudo, so skip it.
+    monkeypatch.setattr(mopup, "_ensure_sudo_if_needed", lambda dry_run: None)
 
     version = f"{sys.version_info.major}.{sys.version_info.minor}"
 

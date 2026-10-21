@@ -25,7 +25,6 @@ from hyperlink import DecodedURL
 from packaging.version import Version, parse
 from rich.progress import Progress
 
-
 PKG_RE = re.compile(r"^org\.python\.Python\.(?P<name>.*)-(?P<version>\d+\.\d+)$")
 
 PkgFileInfo = TypedDict(

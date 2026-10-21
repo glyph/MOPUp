@@ -25,7 +25,6 @@ from hyperlink import DecodedURL
 from packaging.version import Version, parse
 from rich.progress import Progress
 
-
 PKG_RE = re.compile(r"^org\.python\.Python\.(?P<name>.*)-(?P<version>\d+\.\d+)$")
 
 PkgFileInfo = TypedDict(
@@ -509,7 +508,8 @@ def _ensure_sudo_if_needed(dry_run: bool) -> None:
         if sudo_check.returncode != 0:
             # Kill sudo session after completion if we enabled it
             run(["/usr/bin/sudo", "-k"])  # noqa: S603
-            sys.exit(result.returncode)
+
+        sys.exit(result.returncode)
 
 
 def _get_package_metadata_json(pkg: str) -> PkgInfo:

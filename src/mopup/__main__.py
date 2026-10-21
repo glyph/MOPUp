@@ -10,20 +10,17 @@ from mopup import main as libmain
 from mopup import uninstall as libuninstall
 
 
-@click.group(
-    help="""
+@click.group(help="""
          MOPUp - the (m)ac(O)S (P)ython.org (Up)dater
 
          Tool for managing Python.org installations on macOS.
-         """
-)
+         """)
 def main() -> None:
     """The main group for all Click commands."""
     pass
 
 
-@main.command(
-    help="""
+@main.command(help="""
          Update Python to the latest version.
 
          Run this command and enter your administrator password to install the
@@ -74,13 +71,11 @@ def update(
         print(vexc, file=sys.stderr)
 
 
-@main.command(
-    help="""
+@main.command(help="""
          List all Python versions installed with official Python.org installers.
 
          Shows the exact versions of Python installed on the system.
-         """
-)
+         """)
 def list() -> None:
     """List all Python installations."""
     try:
@@ -91,13 +86,11 @@ def list() -> None:
         print(vexc, file=sys.stderr)
 
 
-@main.command(
-    help="""
+@main.command(help="""
          Uninstall a specific Python version.
 
          Removes all files and packages associated with the specified Python version.
-         """
-)
+         """)
 @click.argument("version", type=str)
 @click.option(
     "--dry-run",

@@ -30,8 +30,7 @@ def main() -> None:
          Optionally specify one or more VERSIONS (e.g., '3.13', or '3.13 3.14')
          to update specific Python installations instead of auto-detecting the
          current version.
-         """
-)
+         """)
 @click.argument("versions", nargs=-1, type=str)
 @click.option("--interactive", default=False, help="use the installer GUI", type=bool)
 @click.option(

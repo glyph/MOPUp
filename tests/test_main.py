@@ -41,6 +41,26 @@ def test_update_nonexistent_version(runner: CliRunner) -> None:
     assert "No Python 2.7 installation found" in result.output
 
 
+def test_update_multiple_versions_dry_run(runner: CliRunner) -> None:
+    """Test updating several Python versions in one invocation."""
+    import sys
+
+    version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    result = runner.invoke(
+        __main__.main, ["update", "2.7", version, "3", "--dry-run=true"]
+    )
+    assert result.exit_code == 0
+
+    # Each version gets its own section, and a failure doesn't stop the rest
+    assert "Python 2.7:" in result.output
+    assert "No Python 2.7 installation found" in result.output
+    assert f"Python {version}:" in result.output
+    assert "this version:" in result.output.lower()
+    assert "new version:" in result.output.lower()
+    assert "Python 3:" in result.output
+    assert "Invalid version" in result.output
+
+
 def test_update_invalid_version_format(runner: CliRunner) -> None:
     """Test updating with invalid version format."""
     result = runner.invoke(__main__.main, ["update", "3", "--dry-run=true"])
@@ -141,9 +161,17 @@ def test_main_update_real(runner: CliRunner) -> None:
 
 
 @pytest.mark.destructive
-def test_uninstall_interactive(runner: CliRunner) -> None:
+def test_uninstall_interactive(
+    runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test uninstall with interactive mode (won't actually uninstall)."""
     import sys
+
+    import mopup
+
+    # The test answers "no" at the prompt and never removes anything, so it
+    # doesn't need sudo, so skip it.
+    monkeypatch.setattr(mopup, "_ensure_sudo_if_needed", lambda dry_run: None)
 
     version = f"{sys.version_info.major}.{sys.version_info.minor}"
 

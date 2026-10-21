@@ -51,6 +51,9 @@ Normally, it does this using a CLI in the background, but if you'd prefer, you
 can run it with ``mopup update --interactive=true`` for it to launch the usual macOS GUI
 Installer app.
 
+To update a Python other than the one you're running, or several at once, pass
+their versions: ``mopup update 3.13`` or ``mopup update 3.13 3.14 3.15``.
+
 You can also uninstall Python versions with ``mopup uninstall <version>`` (e.g.,
 ``mopup uninstall 3.14``). Use ``--dry-run=true`` to see what would be removed
 without actually removing anything.

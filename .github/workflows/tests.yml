@@ -134,6 +134,7 @@ jobs:
         run: |
           pipx install --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" poetry
           poetry --version
+          pipx inject --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" poetry poetry-plugin-export
 
       - name: Install Nox
         run: |

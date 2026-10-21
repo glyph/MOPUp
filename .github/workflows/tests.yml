@@ -53,6 +53,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" poetry
+          pipx inject --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" poetry poetry-plugin-export
           poetry --version
 
       - name: Install Nox
@@ -133,11 +134,12 @@ jobs:
         run: |
           pipx install --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" poetry
           poetry --version
+          pipx inject --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" poetry poetry-plugin-export
 
       - name: Install Nox
         run: |
           pipx install --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" nox
-          pipx inject --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" nox nox-poetry
+          pipx inject --pip-args="--constraint=${PWD}/.github/workflows/constraints.txt" nox nox-poetry poetry-plugin-export
           nox --version
 
       - name: Download coverage data

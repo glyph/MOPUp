@@ -121,3 +121,8 @@ This will allow a chance to talk it over with the owners and validate your appro
 .. _pull request: https://github.com/glyph/MOPUp/pulls
 .. github-only
 .. _Code of Conduct: CODE_OF_CONDUCT.rst
+
+AI Policy
+---------
+
+This project follows the `Twisted AI Policy <https://docs.twisted.org/en/latest/development/ai-policy.html>`_. This means this project does not allow the inclusion of the outputs of generative AI tools.
